@@ -1,0 +1,100 @@
+---
+### provision AWS EC2 instance
+- hosts: localhost
+  name : Provision servers
+  connection: local
+  gather_facts: false
+  user: root
+  pre_tasks:
+    - include_vars: variables.yml
+  tasks:
+    - name: Provision {{ ec2_count }} instances with tag ClusterId {{ ec2_cluster_id }}
+      local_action:
+        module: ec2
+        key_name: "{{ ec2_keypair }}"
+        group_id: "{{ ec2_security_group_id }}"
+        instance_type: "{{ ec2_instance_type }}"
+        image: "{{ ec2_image }}"
+        vpc_subnet_id: "{{ ec2_subnet_id }}"
+        region: "{{ ec2_region }}"
+        instance_tags: '{"Role":"{{ec2_tag_Role}}", "ClusterId":"{{ec2_cluster_id}}"}'
+        assign_public_ip: yes
+        wait: true
+        exact_count: "{{ ec2_count }}"
+        count_tag:
+          ClusterId: "{{ ec2_cluster_id }}"
+        volumes:
+          - device_name: /dev/sda1
+            volume_type: gp2
+            volume_size: "{{ ec2_volume_size }}"
+            delete_on_termination: true
+      register: ec2
+  #  - name: Get EC2 instance IDs in cluster {{ec2_cluster_id}}
+  #    when: ec2 is not defined
+  #    ec2_instance_info:
+  #      filters:
+  #        "tag:ClusterId": "{{ ec2_cluster_id }}"
+  #      region: "{{ ec2_region }}"
+  #    register: instances
+    - add_host:
+        name: "{{ item.public_dns_name }}"
+        groups: 
+          - Role_{{ec2_tag_Role}}
+          - ec2hosts
+        ec2_region: "{{ ec2_region }}"
+        ec2_tag_Role: "{{ ec2_tag_Role}}"
+        ec2_cluster_id: "{{ ec2_cluster_id }}"
+        ec2_ip_address: "{{ item.public_ip }}"
+        cc_listen_port: "{{ item.public_dns_name}}:5000"
+      with_items: "{{ ec2.instances }}"
+
+    - name: Wait for the instances to boot by checking the ssh port
+      wait_for: host={{item.public_ip}} port=22 delay=15 timeout=300 state=started
+      with_items: "{{ ec2.instances }}"
+
+ # post_tasks:
+ #   - name: refresh hosts inventory list
+ #     meta: refresh_inventory
+
+- hosts: ec2hosts
+  name: Configure servers
+  gather_facts: true
+  pre_tasks:
+    - include_vars: variables.yml
+  user: "{{ec2_ssh_user|default('ec2-user'  , true)}}"
+  roles:
+    - role: geerlingguy.java
+      become: yes
+      when: "ansible_os_family == 'RedHat'"
+      java_packages:
+        - java-1.{{jdk_version}}.0-openjdk
+    - role: geerlingguy.java
+      become: yes
+      when: "ansible_os_family == 'Debian'"
+      java_packages:
+        - openjdk-{{jdk_version}}-jdk
+  tasks:
+    - name: "Download and extract Neo4j {{neo4j_version}}"
+      unarchive:
+        src: http://dist.neo4j.org/neo4j-enterprise-{{neo4j_version}}-unix.tar.gz
+        dest: .
+        remote_src: yes
+    #- debug: var=play_hosts
+    - name: Configure neo4j.conf for Causal Cluster
+      when: ec2_count > 1
+      replace:
+        path: ./neo4j-enterprise-{{neo4j_version}}/conf/neo4j.conf
+        regexp: "{{item.regexp}}"
+        replace: "{{item.replace}}"
+      loop:
+        - { regexp: '^#dbms.connectors.default_listen_address=0.0.0.0', replace: 'dbms.connectors.default_listen_address=0.0.0.0'}
+        - { regexp: '^#dbms.default_listen_address=0.0.0.0', replace: 'dbms.default_listen_address=0.0.0.0'}
+        - { regexp: '^#dbms.mode=CORE', replace: 'dbms.mode=CORE' }
+        - { regexp: '^#causal_clustering.expected_core_cluster_size=3', replace: 'causal_clustering.expected_core_cluster_size={{ec2_count}}'  }
+        - { regexp: '^#causal_clustering.minimum_core_cluster_size_at_runtime=3', replace: 'causal_clustering.minimum_core_cluster_size_at_runtime={{ec2_count}}' }
+        - { regexp: '^#causal_clustering.minimum_core_cluster_size_at_formation=3', replace: 'causal_clustering.minimum_core_cluster_size_at_formation={{ec2_count}}' }
+        - { regexp: "^#causal_clustering.initial_discovery_members=localhost:5000,localhost:5001,localhost:5002", replace: "causal_clustering.initial_discovery_members={{play_hosts | product(['5000'])|map('join', ':') |join(',')}}"}
+    #- name: Create neo4j user
+    - name: Start Neo4j
+      shell: ./neo4j-enterprise-{{neo4j_version}}/bin/neo4j start
+

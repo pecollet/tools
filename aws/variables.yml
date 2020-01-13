@@ -1,0 +1,26 @@
+#VM count, size and location
+ec2_count: 3
+ec2_instance_type: "t2.micro"
+ec2_volume_size: 12
+ec2_region: "eu-west-2"
+
+#OS (RH: ami-0a0cb6c7bcb2e4c51 ; SUSE: ami-00b3184b502428cd0 ; Ubuntu: ami-0be057a22c63962cb , user:ubuntu)
+ec2_image: "ami-0a0cb6c7bcb2e4c51"
+
+#Connectivity (ec2_ssh_user:[ec2-user, ubuntu, centos])
+ec2_ssh_user: "ec2-user"
+ec2_keypair: "DavidPecollet"
+ec2_security_group_id: "sg-0f777e6e8b4e31fa1"
+ec2_subnet_id: "subnet-50a10f2a"
+
+#Tags (note: cluster_id is used to find the VMs when stopping them)
+ec2_tag_Role: "CC_CORE"
+ec2_cluster_id: "DPE_cluster_1"
+
+#Software versions
+neo4j_version: "3.5.14"
+jdk_version: "8"
+
+#TODO: add plugins (apoc, graphQL...), CC/HA
+neo4j_plugins: apoc
+neo4j_cluster_type: CC
