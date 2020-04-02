@@ -1,0 +1,39 @@
+#file parsing
+set datafile separator ','
+set xdata time
+set timefmt "%s"
+
+#title
+set title ARG1
+#set key autotitle columnhead
+set key below
+
+#x/y axis
+set xlabel 'Time'
+set format x "%d/%m/%Y %H:%M:%S"
+set xtics rotate by -45
+set format y '%.0f'
+
+#grid
+set style line 100 lt 1 lc rgb "grey" lw 0.5 
+set grid ls 100 
+
+#column/range parameters 
+if (ARGC==1) {col=2} else { # no extra param
+    if (ARGC==2) { col=ARG2+0 } else { #columnNum
+       if (ARGC==3) { col=2; rangeStart=ARG2; rangeEnd=ARG3; } else {    # range start/end
+          if (ARGC >= 4 ) {  # columnNum + range start/end
+             col=ARG2+0;
+             rangeStart=ARG3; rangeEnd=ARG4;
+          }
+       }
+       set xrange [rangeStart:rangeEnd]
+    }
+}
+
+#plot
+#plot ARG1 using 1:2 with lines
+set term qt font "Arial,9" noenhanced
+#set term png
+#set output sprintf("%s.png", word(ARG1, 1))
+plot for [i=1:words(ARG1)] word(ARG1, i) using 1:col with lines title sprintf("%s (%s)", columnhead(col),word(ARG1, i)) 
