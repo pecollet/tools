@@ -1,5 +1,20 @@
 # tools
 
+## Metrics plotting
+### gnuplot configs
+ * requires gnuplot
+ * use `neo.metrics.gnuplot_qt` to display plot in a new window, `neo.metrics.gnuplot_png` to write output to a png file
+ * usage (plot a single file) : 
+  `gnuplot -p -c neo.metrics.gnuplot_[qt|png] <csv> [<colNum>] [rangeStart rangeEnd]`
+ * usage (plot several files) :  `gnuplot -p -c neo.metrics.gnuplot_[qt|png] "<csv1> <csv2> ..." [<colNum>] [rangeStart rangeEnd]`
+ * range : expressed with epoch values in seconds (defaults to plotting the whole data in the file(s))
+ * colNum : selects with column to plot (defaults to 2nd column)
+### wrapper script
+ * usage : `plot_metrics.sh <metrics_directory> [rangeStart rangeEnd]`
+ * plots all the metrics in the directory, including the rotated files (grouped in 1 same chart per metric)
+ * range : expressed with epoch values in seconds (defaults to plotting the whole data in the file(s))
+ * outputs png files for each metric (<metric_file>.png) and a html report (metrics_<start>_<end>.html) that gathers all those images (in <metrics_directory>)
+ * Notes : only plots column 2 ; if run several times, png files are overwritten
 ## Log parsing
 TODO
 ## Cluster control
