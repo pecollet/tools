@@ -1,4 +1,4 @@
-#!/bin/bash
+ #!/bin/bash
 
 
 intro_banner()
@@ -138,6 +138,13 @@ done
 configure_cc () {
 echo "Configuring for a Causal Cluster"
 start=1
+cc_discovery_members=""
+for i in $(eval echo "{$start..$size}")
+do
+  cc_discovery_members="${cc_discovery_members},localhost:500${i}"
+done
+cc_discovery_members=${cc_discovery_members:1}
+echo "CC discovery members: ${cc_discovery_members}"
 for i in $(eval echo "{$start..$size}")
 do
 #dbms.mode
@@ -150,7 +157,7 @@ replace="causal_clustering.expected_core_cluster_size=3"
 sed -i '' -e "s/$src/$replace/g" ./instance$i/neo4j-enterprise-$neo_version/conf/neo4j.conf
 
 src="#causal_clustering.initial_discovery_members=localhost:5000,localhost:5001,localhost:5002"
-replace="causal_clustering.initial_discovery_members=localhost:5001,localhost:5002,localhost:5003"
+replace="causal_clustering.initial_discovery_members=${cc_discovery_members}"
 sed -i '' -e "s/$src/$replace/g" ./instance$i/neo4j-enterprise-$neo_version/conf/neo4j.conf
 
 src="#causal_clustering.discovery_listen_address=:5000"
