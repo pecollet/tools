@@ -535,6 +535,9 @@
           { "Fn::If" : [ "CreateReplica3", {"Id" : {"Ref": "Neo4jReplica3"}, "Port" : 7687}, {"Ref": "AWS::NoValue"} ]},
           { "Fn::If" : [ "CreateReplica4", {"Id" : {"Ref": "Neo4jReplica4"}, "Port" : 7687}, {"Ref": "AWS::NoValue"} ]}
         ],
+        "HealthCheckPath": "/db/manage/server/causalclustering/available",
+        "HealthCheckPort": 7474,
+        "HealthCheckProtocol": "HTTP",
         "VpcId" : {  "Ref": "VPC" }
       }
     },
@@ -556,6 +559,9 @@
           { "Fn::If" : [ "CreateReplica2",  {"Id" : {"Ref": "Neo4jReplica2"}, "Port" : 7474}, {"Ref": "AWS::NoValue"} ]},
           { "Fn::If" : [ "CreateReplica3",  {"Id" : {"Ref": "Neo4jReplica3"}, "Port" : 7474}, {"Ref": "AWS::NoValue"} ]},
           { "Fn::If" : [ "CreateReplica4",  {"Id" : {"Ref": "Neo4jReplica4"}, "Port" : 7474}, {"Ref": "AWS::NoValue"} ]} ],
+        "HealthCheckPath": "/db/manage/server/causalclustering/available",
+        "HealthCheckPort": 7474,
+        "HealthCheckProtocol": "HTTP",
         "VpcId" : {  "Ref": "VPC" }
       }
     },
@@ -565,6 +571,7 @@
       "Properties" : {
         "IpAddressType" : "ipv4",
         "Scheme" : "internet-facing",
+        "LoadBalancerAttributes" : [ {  "Key" : "load_balancing.cross_zone.enabled",  "Value" : "true"} ],
         "SubnetMappings" : [ {  "SubnetId" : {"Ref": "Subnet0"}}, {"SubnetId" : {"Ref": "Subnet1"}}, {"SubnetId" : {"Ref": "Subnet2"}} ],
         "Type" : "network"
       }
@@ -1499,6 +1506,7 @@
                 "/bin/rm -rf /var/lib/neo4j/data/databases/graph.db/ 2>&1 | tee -a $LOGFILE\n",
                 "echo 'dbms.routing.enabled=true' >> /etc/neo4j/neo4j.template\n",
                 "echo 'dbms.routing.advertised_address='$(hostname -f)':7688' >> /etc/neo4j/neo4j.template\n",
+                "echo 'dbms.security.causal_clustering_status_auth_enabled=false' >> /etc/neo4j/neo4j.template\n",
                 "/usr/bin/neo4j-admin set-initial-password ",
                 {
                   "Ref": "Password"
@@ -1774,6 +1782,7 @@
                 "/bin/rm -rf /var/lib/neo4j/data/databases/graph.db/ 2>&1 | tee -a $LOGFILE\n",
                 "echo 'dbms.routing.enabled=true' >> /etc/neo4j/neo4j.template\n",
                 "echo 'dbms.routing.advertised_address='$(hostname -f)':7688' >> /etc/neo4j/neo4j.template\n",
+                "echo 'dbms.security.causal_clustering_status_auth_enabled=false' >> /etc/neo4j/neo4j.template\n",
                 "/usr/bin/neo4j-admin set-initial-password ",
                 {
                   "Ref": "Password"
@@ -2049,6 +2058,7 @@
                 "/bin/rm -rf /var/lib/neo4j/data/databases/graph.db/ 2>&1 | tee -a $LOGFILE\n",
                 "echo 'dbms.routing.enabled=true' >> /etc/neo4j/neo4j.template\n",
                 "echo 'dbms.routing.advertised_address='$(hostname -f)':7688' >> /etc/neo4j/neo4j.template\n",
+                "echo 'dbms.security.causal_clustering_status_auth_enabled=false' >> /etc/neo4j/neo4j.template\n",
                 "/usr/bin/neo4j-admin set-initial-password ",
                 {
                   "Ref": "Password"
@@ -2324,6 +2334,7 @@
                 "/bin/rm -rf /var/lib/neo4j/data/databases/graph.db/ 2>&1 | tee -a $LOGFILE\n",
                 "echo 'dbms.routing.enabled=true' >> /etc/neo4j/neo4j.template\n",
                 "echo 'dbms.routing.advertised_address='$(hostname -f)':7688' >> /etc/neo4j/neo4j.template\n",
+                "echo 'dbms.security.causal_clustering_status_auth_enabled=false' >> /etc/neo4j/neo4j.template\n",
                 "/usr/bin/neo4j-admin set-initial-password ",
                 {
                   "Ref": "Password"
@@ -2599,6 +2610,7 @@
                 "/bin/rm -rf /var/lib/neo4j/data/databases/graph.db/ 2>&1 | tee -a $LOGFILE\n",
                 "echo 'dbms.routing.enabled=true' >> /etc/neo4j/neo4j.template\n",
                 "echo 'dbms.routing.advertised_address='$(hostname -f)':7688' >> /etc/neo4j/neo4j.template\n",
+                "echo 'dbms.security.causal_clustering_status_auth_enabled=false' >> /etc/neo4j/neo4j.template\n",
                 "/usr/bin/neo4j-admin set-initial-password ",
                 {
                   "Ref": "Password"
@@ -2874,6 +2886,7 @@
                 "/bin/rm -rf /var/lib/neo4j/data/databases/graph.db/ 2>&1 | tee -a $LOGFILE\n",
                 "echo 'dbms.routing.enabled=true' >> /etc/neo4j/neo4j.template\n",
                 "echo 'dbms.routing.advertised_address='$(hostname -f)':7688' >> /etc/neo4j/neo4j.template\n",
+                "echo 'dbms.security.causal_clustering_status_auth_enabled=false' >> /etc/neo4j/neo4j.template\n",
                 "/usr/bin/neo4j-admin set-initial-password ",
                 {
                   "Ref": "Password"
@@ -3149,6 +3162,7 @@
                 "/bin/rm -rf /var/lib/neo4j/data/databases/graph.db/ 2>&1 | tee -a $LOGFILE\n",
                 "echo 'dbms.routing.enabled=true' >> /etc/neo4j/neo4j.template\n",
                 "echo 'dbms.routing.advertised_address='$(hostname -f)':7688' >> /etc/neo4j/neo4j.template\n",
+                "echo 'dbms.security.causal_clustering_status_auth_enabled=false' >> /etc/neo4j/neo4j.template\n",
                 "/usr/bin/neo4j-admin set-initial-password ",
                 {
                   "Ref": "Password"
@@ -3424,6 +3438,7 @@
                 "/bin/rm -rf /var/lib/neo4j/data/databases/graph.db/ 2>&1 | tee -a $LOGFILE\n",
                 "echo 'dbms.routing.enabled=true' >> /etc/neo4j/neo4j.template\n",
                 "echo 'dbms.routing.advertised_address='$(hostname -f)':7688' >> /etc/neo4j/neo4j.template\n",
+                "echo 'dbms.security.causal_clustering_status_auth_enabled=false' >> /etc/neo4j/neo4j.template\n",
                 "/usr/bin/neo4j-admin set-initial-password ",
                 {
                   "Ref": "Password"
@@ -3699,6 +3714,7 @@
                 "/bin/rm -rf /var/lib/neo4j/data/databases/graph.db/ 2>&1 | tee -a $LOGFILE\n",
                 "echo 'dbms.routing.enabled=true' >> /etc/neo4j/neo4j.template\n",
                 "echo 'dbms.routing.advertised_address='$(hostname -f)':7688' >> /etc/neo4j/neo4j.template\n",
+                "echo 'dbms.security.causal_clustering_status_auth_enabled=false' >> /etc/neo4j/neo4j.template\n",
                 "/usr/bin/neo4j-admin set-initial-password ",
                 {
                   "Ref": "Password"
@@ -3974,6 +3990,7 @@
                 "/bin/rm -rf /var/lib/neo4j/data/databases/graph.db/ 2>&1 | tee -a $LOGFILE\n",
                 "echo 'dbms.routing.enabled=true' >> /etc/neo4j/neo4j.template\n",
                 "echo 'dbms.routing.advertised_address='$(hostname -f)':7688' >> /etc/neo4j/neo4j.template\n",
+                "echo 'dbms.security.causal_clustering_status_auth_enabled=false' >> /etc/neo4j/neo4j.template\n",
                 "/usr/bin/neo4j-admin set-initial-password ",
                 {
                   "Ref": "Password"
@@ -4249,6 +4266,7 @@
                 "/bin/rm -rf /var/lib/neo4j/data/databases/graph.db/ 2>&1 | tee -a $LOGFILE\n",
                 "echo 'dbms.routing.enabled=true' >> /etc/neo4j/neo4j.template\n",
                 "echo 'dbms.routing.advertised_address='$(hostname -f)':7688' >> /etc/neo4j/neo4j.template\n",
+                "echo 'dbms.security.causal_clustering_status_auth_enabled=false' >> /etc/neo4j/neo4j.template\n",
                 "/usr/bin/neo4j-admin set-initial-password ",
                 {
                   "Ref": "Password"
@@ -4524,6 +4542,7 @@
                 "/bin/rm -rf /var/lib/neo4j/data/databases/graph.db/ 2>&1 | tee -a $LOGFILE\n",
                 "echo 'dbms.routing.enabled=true' >> /etc/neo4j/neo4j.template\n",
                 "echo 'dbms.routing.advertised_address='$(hostname -f)':7688' >> /etc/neo4j/neo4j.template\n",
+                "echo 'dbms.security.causal_clustering_status_auth_enabled=false' >> /etc/neo4j/neo4j.template\n",
                 "/usr/bin/neo4j-admin set-initial-password ",
                 {
                   "Ref": "Password"
