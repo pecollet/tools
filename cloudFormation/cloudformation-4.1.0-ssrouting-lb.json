@@ -522,7 +522,19 @@
       "Properties" : {
         "Port" : 7687,
         "Protocol" : "TCP",
-        "Targets" : [ {"Id" : {"Ref": "Neo4jServer0"},  "Port" : 7687},{"Id" : {"Ref": "Neo4jServer1"},  "Port" : 7687},{"Id" : {"Ref": "Neo4jServer2"},  "Port" : 7687} ],
+        "Targets" : [                      {"Id" : {"Ref": "Neo4jServer0"},  "Port" : 7687}, 
+                                           {"Id" : {"Ref": "Neo4jServer1"},  "Port" : 7687}, 
+                                           {"Id" : {"Ref": "Neo4jServer2"},  "Port" : 7687},
+          { "Fn::If" : [ "CreateNode3",    {"Id" : {"Ref": "Neo4jServer3"},  "Port" : 7687}, "AWS::NoValue" ]},
+          { "Fn::If" : [ "CreateNode4",    {"Id" : {"Ref": "Neo4jServer4"},  "Port" : 7687}, "AWS::NoValue" ]},
+          { "Fn::If" : [ "CreateNode5",    {"Id" : {"Ref": "Neo4jServer5"},  "Port" : 7687}, "AWS::NoValue" ]},
+          { "Fn::If" : [ "CreateNode6",    {"Id" : {"Ref": "Neo4jServer6"},  "Port" : 7687}, "AWS::NoValue" ]},
+          { "Fn::If" : [ "CreateReplica0", {"Id" : {"Ref": "Neo4jReplica0"}, "Port" : 7687}, "AWS::NoValue" ]}, 
+          { "Fn::If" : [ "CreateReplica1", {"Id" : {"Ref": "Neo4jReplica1"}, "Port" : 7687}, "AWS::NoValue" ]}, 
+          { "Fn::If" : [ "CreateReplica2", {"Id" : {"Ref": "Neo4jReplica2"}, "Port" : 7687}, "AWS::NoValue" ]}, 
+          { "Fn::If" : [ "CreateReplica3", {"Id" : {"Ref": "Neo4jReplica3"}, "Port" : 7687}, "AWS::NoValue" ]}, 
+          { "Fn::If" : [ "CreateReplica4", {"Id" : {"Ref": "Neo4jReplica4"}, "Port" : 7687}, "AWS::NoValue" ]} 
+        ],
         "VpcId" : {  "Ref": "VPC" }
       }
     },
@@ -531,7 +543,19 @@
       "Properties" : {
         "Port" : 7474,
         "Protocol" : "TCP",
-        "Targets" : [ {"Id" : {"Ref": "Neo4jServer0"},  "Port" : 7474},{"Id" : {"Ref": "Neo4jServer1"},  "Port" : 7474},{"Id" : {"Ref": "Neo4jServer2"},  "Port" : 7474}  ],
+        "Targets" : [ 
+          {"Id" : {"Ref": "Neo4jServer0"},  "Port" : 7474},
+          {"Id" : {"Ref": "Neo4jServer1"},  "Port" : 7474},
+          {"Id" : {"Ref": "Neo4jServer2"},  "Port" : 7474},
+          { "Fn::If" : [ "CreateNode3",     {"Id" : {"Ref": "Neo4jServer3"},  "Port" : 7474}, "AWS::NoValue" ]},
+          { "Fn::If" : [ "CreateNode4",     {"Id" : {"Ref": "Neo4jServer4"},  "Port" : 7474}, "AWS::NoValue" ]},
+          { "Fn::If" : [ "CreateNode5",     {"Id" : {"Ref": "Neo4jServer5"},  "Port" : 7474}, "AWS::NoValue" ]},
+          { "Fn::If" : [ "CreateNode6",     {"Id" : {"Ref": "Neo4jServer6"},  "Port" : 7474}, "AWS::NoValue" ]},
+          { "Fn::If" : [ "CreateReplica0",  {"Id" : {"Ref": "Neo4jReplica0"}, "Port" : 7474}, "AWS::NoValue" ]}, 
+          { "Fn::If" : [ "CreateReplica1",  {"Id" : {"Ref": "Neo4jReplica1"}, "Port" : 7474}, "AWS::NoValue" ]}, 
+          { "Fn::If" : [ "CreateReplica2",  {"Id" : {"Ref": "Neo4jReplica2"}, "Port" : 7474}, "AWS::NoValue" ]}, 
+          { "Fn::If" : [ "CreateReplica3",  {"Id" : {"Ref": "Neo4jReplica3"}, "Port" : 7474}, "AWS::NoValue" ]}, 
+          { "Fn::If" : [ "CreateReplica4",  {"Id" : {"Ref": "Neo4jReplica4"}, "Port" : 7474}, "AWS::NoValue" ]} ],
         "VpcId" : {  "Ref": "VPC" }
       }
     },
@@ -2138,7 +2162,7 @@
         },
         "AvailabilityZone": {
           "Fn::Select": [
-            1,
+            0,
             {
               "Fn::GetAZs": {
                 "Ref": "AWS::Region"
@@ -2413,7 +2437,7 @@
         },
         "AvailabilityZone": {
           "Fn::Select": [
-            0,
+            1,
             {
               "Fn::GetAZs": {
                 "Ref": "AWS::Region"
@@ -3238,7 +3262,7 @@
         },
         "AvailabilityZone": {
           "Fn::Select": [
-            0,
+            2,
             {
               "Fn::GetAZs": {
                 "Ref": "AWS::Region"
@@ -3267,7 +3291,7 @@
             "DeviceIndex": "0",
             "DeleteOnTermination": "true",
             "SubnetId": {
-              "Ref": "Subnet0"
+              "Ref": "Subnet2"
             }
           }
         ],
@@ -3817,7 +3841,7 @@
             "DeviceIndex": "0",
             "DeleteOnTermination": "true",
             "SubnetId": {
-              "Ref": "Subnet2"
+              "Ref": "Subnet0"
             }
           }
         ],
@@ -4063,7 +4087,7 @@
         },
         "AvailabilityZone": {
           "Fn::Select": [
-            1,
+            2,
             {
               "Fn::GetAZs": {
                 "Ref": "AWS::Region"
@@ -4092,7 +4116,7 @@
             "DeviceIndex": "0",
             "DeleteOnTermination": "true",
             "SubnetId": {
-              "Ref": "Subnet0"
+              "Ref": "Subnet2"
             }
           }
         ],
@@ -4338,7 +4362,7 @@
         },
         "AvailabilityZone": {
           "Fn::Select": [
-            0,
+            1,
             {
               "Fn::GetAZs": {
                 "Ref": "AWS::Region"
