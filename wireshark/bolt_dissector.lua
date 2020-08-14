@@ -16,17 +16,17 @@ function get_message_name(tag)
 
       if tag ==   1 then message_name = "HELLO"			--1
   elseif tag ==   2 then message_name = "GOODBYE"		--2
-  elseif tag == 112 then message_name = "SUCCESS"		--70
-  elseif tag == 113 then message_name = "RECORD"		--71 	
-  elseif tag == 126 then message_name = "IGNORED"		--7e
-  elseif tag == 127 then message_name = "FAILURE"		--7f
+  elseif tag ==  15 then message_name = "RESET"     --0f
+  elseif tag ==  16 then message_name = "RUN"       --10 
   elseif tag ==  17 then message_name = "BEGIN"			--11
   elseif tag ==  18 then message_name = "COMMIT"		--12
-  elseif tag ==  19 then message_name = "ROLLBACK"		--13
-  elseif tag ==  16 then message_name = "RUN"			--10 
+  elseif tag ==  19 then message_name = "ROLLBACK"	--13
   elseif tag ==  47 then message_name = "DISCARD"		--2f
-  elseif tag ==  15 then message_name = "RESET"			--0f
   elseif tag ==  63 then message_name = "PULL" 			--3f
+  elseif tag == 112 then message_name = "SUCCESS"   --70
+  elseif tag == 113 then message_name = "RECORD"    --71  
+  elseif tag == 126 then message_name = "IGNORED"   --7e
+  elseif tag == 127 then message_name = "FAILURE"   --7f
   end
 
   return message_name
@@ -95,17 +95,15 @@ function bolt_protocol.dissector(buffer, pinfo, tree)
   			subtree:add(supported_version, major .. "." .. minor)
   		end
   		i = i + 1
-	end
+	  end
   elseif length == 4 then 
   	subtree:add(message_tag, "SERVER HANDSHAKE") 
   else
   	local next_offset = 0
-  	while next_offset <  length do
-	  local end_offset = read_next_chunk(subtree, buffer, next_offset)
-	  next_offset = end_offset
-	end
-
- 	
+  	while next_offset < length do
+	    local end_offset = read_next_chunk(subtree, buffer, next_offset)
+	    next_offset = end_offset
+	  end
   end
 end
 
