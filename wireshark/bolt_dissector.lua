@@ -97,21 +97,25 @@ function read_next_value(subtree, buffer, offset, treeFieldName)
   elseif  (marker >=  0x80 and marker <=   0x8f) then  --STRING (size 0-15 ascii chars)             X
       local str_len=marker - 0x80
       local str = readBuffer(buffer,offset+1, str_len):string()
+      temp=str
       subtree:add(treeFieldName or '(string)', str)
       return offset + 1 + str_len
   elseif  marker == 0xd0 then -- STRING 8bit  ; next byte is size in bytes                          X
       local str_len= readBuffer(buffer,offset+1,1):uint()
       local str = readBuffer(buffer,offset+2, str_len):string()
+      temp=str
       subtree:add(treeFieldName or '(string)', str)
       return offset + 2 + str_len
   elseif  marker == 0xd1 then -- STRING 16bit ; next 2 bytes is size in bytes                       X
       local str_len= readBuffer(buffer,offset+1,2):uint()
       local str = readBuffer(buffer,offset+3, str_len):string()
+      temp=str
       subtree:add(treeFieldName or '(string)', str)
       return offset + 3 + str_len
   elseif  marker == 0xd2 then -- STRING 32bit ; next 4
       local str_len= readBuffer(buffer,offset+1,4):uint()
       local str = readBuffer(buffer,offset+5, str_len):string()
+      temp=str
       subtree:add(treeFieldName or '(string)', str)
       return offset + 5 + str_len
   elseif  (marker >=  0xf0 and marker <=   0xff) then  --TINY_INT negative numbers -16 to -1        x
@@ -277,13 +281,17 @@ function read_next_chunk(subtree, pinfo, buffer, offset)
   table.insert(info, message_name) -- TODO : add extra info
 
 	local chunk_data=""
-  if (size ~= 0) and (mode == "FULL") then 
+  if (size ~= 0) and ((mode == "FULL") or (mode == "QUERY" and message_name=="RUN")) then 
     -- read values
     local i=0
+    temp=''
     local field_offset = offset+4
     while i < fieldsCnt do
       local field_end_offset = read_next_value(chunktree, buffer, field_offset)
       field_offset = field_end_offset
+      if (i==0) and (mode == "QUERY" and message_name=="RUN") then
+          table.insert(info, "["..temp.."]")
+      end
       i = i + 1
     end
     -- special values to display in info
@@ -437,4 +445,4 @@ end
 
 local tcp_port = DissectorTable.get("tcp.port")
 tcp_port:add(7687, bolt_protocol)
-mode="FULL" --FULL HEADER QUERY
+mode="QUERY" --FULL : extract all / HEADER : only headers / QUERY : headers and RUN message (that contains the CYPHER)
