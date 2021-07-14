@@ -48,6 +48,7 @@ function get_message_name(tag)
   elseif tag ==  19 then message_name = "ROLLBACK"	--0x13
   elseif tag ==  47 then message_name = "DISCARD"		--0x2f
   elseif tag ==  63 then message_name = "PULL" 			--0x3f
+  elseif tag == 102 then message_name = "ROUTE"     --0x66   4.3 protocol
   elseif tag == 112 then message_name = "SUCCESS"   --0x70
   elseif tag == 113 then message_name = "RECORD"    --0x71  
   elseif tag == 126 then message_name = "IGNORED"   --0x7e
@@ -445,4 +446,5 @@ end
 
 local tcp_port = DissectorTable.get("tcp.port")
 tcp_port:add(7687, bolt_protocol)
-mode="QUERY" --FULL : extract all / HEADER : only headers / QUERY : headers and RUN message (that contains the CYPHER)
+tcp_port:add(7688, bolt_protocol)
+mode="FULL" --FULL : extract all / HEADER : only headers / QUERY : headers and RUN message (that contains the CYPHER)
