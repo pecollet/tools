@@ -48,7 +48,10 @@ function get_message_name(tag)
   elseif tag ==  19 then message_name = "ROLLBACK"	--0x13
   elseif tag ==  47 then message_name = "DISCARD"		--0x2f
   elseif tag ==  63 then message_name = "PULL" 			--0x3f
+  elseif tag ==  84 then message_name = "TELEMETRY" --0x54
   elseif tag == 102 then message_name = "ROUTE"     --0x66   4.3 protocol
+  elseif tag == 106 then message_name = "LOGON"     --0x6A
+  elseif tag == 107 then message_name = "LOGOFF"    --0x6B
   elseif tag == 112 then message_name = "SUCCESS"   --0x70
   elseif tag == 113 then message_name = "RECORD"    --0x71  
   elseif tag == 126 then message_name = "IGNORED"   --0x7e
@@ -444,7 +447,19 @@ function bolt_protocol.dissector(buffer, pinfo, tree)
 
 end
 
+local function heuristic_checker(buffer, pinfo, tree)
+  if buffer:len() == 0 then return false end
+  if ((buffer:len() == (20 )) and (readBuffer(buffer,0,4):uint() == 0x6060b017)) then
+    conversation = find_or_create_conversation(pinfo);
+    conversation_set_dissector(conversation, PROTOABBREV_tcp_handle);
+    return true
+  end
+  return false
+end
+
 local tcp_port = DissectorTable.get("tcp.port")
 tcp_port:add(7687, bolt_protocol)
 tcp_port:add(7688, bolt_protocol)
+
+--bolt_protocol:register_heuristic("tcp", heuristic_checker)
 mode="FULL" --FULL : extract all / HEADER : only headers / QUERY : headers and RUN message (that contains the CYPHER)
