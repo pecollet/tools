@@ -33,19 +33,35 @@ def parse_nmt_file(file_content):
         'Categories': categories
     }
 
-#Volvo "nmt_11202024.00/00/01.txt"
-def extract_timestamp_from_filename(filename):
+def get_pid(filename: str) -> int:
+    with open(filename, 'r') as file:
+        first_line = file.readline().strip()
+        return int(first_line.split(':')[0])
+
+
+################################################# PARSERS ################################################################
+# methods used to parse timestamps and pid/hostname
+##########################################################################################################################
+
+#default method to extract timestamp from file metadata ; pid from content of file
+def parse_default(filename): 
+    creation_time = os.path.getmtime(filename)
+    #use pid as host identifier
+    return datetime.fromtimestamp(creation_time), get_pid(filename)
+
+#CMS NMTs - extract timestamp from file "nmt_11202024.00/00/01.txt" ; pid from content of file
+def parse_cms(filename):
     # Extract the date and time portion from the filename
     match = re.search(r"nmt_(\d{8})\.(\d{2}):(\d{2}):(\d{2})\.txt", filename)
     if match:
         date_str, hour, minute, second = match.groups()
         # Format to datetime object
-        return datetime.strptime(f"{date_str} {hour}:{minute}:{second}", "%m%d%Y %H:%M:%S")
+        return datetime.strptime(f"{date_str} {hour}:{minute}:{second}", "%m%d%Y %H:%M:%S"), get_pid(filename)
     else:
         raise ValueError(f"Filename {filename} does not match expected pattern")
 
-#Airbus AirNavX "11-25-2024-12H-01M-fr0-viaas-5890"
-def extract_timestamp_from_filename2(filename): 
+#Airbus AirNavX - ex : "11-25-2024-12H-01M-fr0-viaas-5890" - use filename for timestamp as well as hostname (instead of pid)
+def parse_airnavx(filename): 
     # Extract the date and time portion from the filename
     match = re.search(r"(\d{2})-(\d{2})-(\d{4})-(\d{2})H-(\d{2})M-(.*)$", filename)
     if match:
@@ -54,7 +70,11 @@ def extract_timestamp_from_filename2(filename):
     else:
         raise ValueError(f"Filename {filename} does not match expected pattern")
 
-def process_files(file_pattern):
+
+
+##########################################################################################################################
+
+def process_files(file_pattern, time_pid_parser_func):
     data = []
     print(file_pattern)
     for file_path in glob.glob(file_pattern):
@@ -63,7 +83,7 @@ def process_files(file_pattern):
             with open(file_path, 'r') as file:
                 content = file.read()
                 parsed_data = parse_nmt_file(content)
-                timestamp, host = extract_timestamp_from_filename2(file_path)
+                timestamp, host = time_pid_parser_func(file_path)
                 for category in parsed_data['Categories']:
                     data.append({
                         'Timestamp': timestamp,
@@ -82,8 +102,10 @@ def plot(df, host:str, value_col: str, output_dir: str, stacked = True):
     # Sort the columns by their maximum values in descending order
     df_pivot = df_pivot[df_pivot.max().sort_values(ascending=False).index]
 
+    file_host_prefix=""
     file_suffix=".png"
     title_suffix=""
+    title_host=""
     if stacked:
         file_suffix = "_stacked.png"
         title_suffix =  "(stacked)"
@@ -93,13 +115,17 @@ def plot(df, host:str, value_col: str, output_dir: str, stacked = True):
         df_pivot.plot.area(figsize=(12, 6), stacked=stacked)
     else:
         df_pivot.plot(figsize=(12, 6))
-    plt.title(f'{value_col} Native Memory Usage Over Time for {host}, by category {title_suffix}')
+    if host:
+        title_host=f" for {host}"
+        file_host_prefix=f"{host}_"
+
+    plt.title(f'{value_col} Native Memory Usage Over Time{title_host}, by category {title_suffix}')
     plt.ylabel(f'{value_col} Memory (KB)')
     plt.xlabel('Timestamp')
     plt.legend(title="Category", loc='upper left', bbox_to_anchor=(1, 1))
     plt.grid(True)
     # plt.show()
-    filename = os.path.join(output_dir, f"{host}_{value_col}_memory_usage{file_suffix}")
+    filename = os.path.join(output_dir, f"{file_host_prefix}{value_col}_memory_usage{file_suffix}")
     plt.savefig(filename, format='png', dpi=300, bbox_inches='tight')
     plt.close() 
 
@@ -117,10 +143,16 @@ def main():
         help="Indicates if the chart is stacked (defaults to False if not provided)"
     )
     parser.add_argument(
-        "--value",  # The option name
-        choices=["committed", "reserved"],  # Restrict to these two choices
+        "--value",  
+        choices=["committed", "reserved"],  # Restrict to these choices
         default="reserved",
-        help="Memory Value to plot, either 'committed' or 'reserved'"
+        help="Memory Value to plot, either 'committed' or 'reserved'. Defaults to 'reserved'."
+    )
+    parser.add_argument(
+        "--parser",
+        choices=["default", "cms", "airnavx"],  # Restrict to these choices
+        default="default",
+        help="method used to parse the timestamp & pid/host, either 'default' (time from file modified date ; pid), 'cms' (time from file name ; pid) or 'airnavx' (custom parsing of time & hostname from filename). Defaults to 'default'."
     )
     args = parser.parse_args()
     if not args.fromdir.exists():
@@ -134,8 +166,11 @@ def main():
     output_dir=f"{input_dir}/output"
     os.makedirs(output_dir, exist_ok=True)
 
+    print(f"Using parser {args.parser}")
+    parser_func = globals()[f"parse_{args.parser}"] 
+
     # Process files and generate a dataframe
-    df = process_files(file_pattern)
+    df = process_files(file_pattern, parser_func)
     # Save to CSV for easy plotting in tools like Excel
     df.to_csv(f"{output_dir}/nmt_df.csv", index=False)
 
