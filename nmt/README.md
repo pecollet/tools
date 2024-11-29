@@ -1,6 +1,9 @@
 # NMT timeline plotter tool
 
 This tool draws a timeline chart of Java Native Memory usage. It shows memory usage per category.
+![image](https://github.com/user-attachments/assets/cdfba9ff-e298-48a0-a1ba-43c05b15498e)
+![image](https://github.com/user-attachments/assets/70ddd49c-b3e5-41ac-af42-33924fc3f25e)
+
 
 ## pre-requisites
  * setup a venv
