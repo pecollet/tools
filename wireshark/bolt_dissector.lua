@@ -260,27 +260,42 @@ function readList(buffer, subtree, list_offset, data_offset, list_size, treeFiel
 end
 
 function read_next_chunk(subtree, pinfo, buffer, offset)
+  -- chunk is : 2 bytes for chunk header (encodes chunk size) + chunk payload + 2 bytes 00 00 for chunk termination
+  -- multi-chunk messages : 2 bytes chunk1 header + chunk1 payload (+ no chunk1 termination) + 2 bytes chunk2 header + chunk2 payload + 00 00
   --bytes #1 & #2 for chunk size
+  local last_chunk_termination=readBuffer(buffer, offset - 2, 2):uint()
+  is_multichunk=false
+  if last_chunk_termination ~= 0x0000 and offset ~= 0x0000 then
+    is_multichunk=true
+    -- subtree:add("read_next_chunk", "multi-chunk message: this chunk is in the same message as the previous chunk")
+  end
   local size=readBuffer(buffer,offset,2):uint()
+  -- subtree:add("read_next_chunk", readBuffer(buffer,offset,1) .." , ".. readBuffer(buffer,offset,2) .." , ".. readBuffer(buffer,offset,3))
   --subtree:add("size", buffer:len())
   if (offset + size + 4 > buffer:len() ) then --if chunk overlaps on next TCP frame
     subtree:add("CHUNK > TCP frame", size+4 .."+".. offset .." vs ".. buffer:len())
-    pinfo.desegment_len=size + 4 -- (buffer:len() - offset) +10  --extra bytes to read
-    pinfo.desegment_offset=offset
-    return -1  --bail out ; Wireshark will pick up the remaining bytes when processing the next TCP frame
+    pinfo.desegment_len=DESEGMENT_ONE_MORE_SEGMENT--size + 4 -- (buffer:len() - offset) +10  --extra bytes to read
+    pinfo.desegment_offset=0 --offset
+    return 0  --bail out ; Wireshark will pick up the remaining bytes when processing the next TCP frame
   end
   local tvb=ByteArray.tvb(readBuffer(buffer,offset, size + 4):bytes(), "BOLT Chunk at offset " .. offset) 
   local chunktree = subtree:add(bolt_protocol, readBuffer(buffer,offset, size + 4), "BOLT Chunk at offset " .. offset)
   chunktree:add(chunk_size, size)
+  local fieldsCnt = 0
+  local message_name = "?"
+  if is_multichunk then
+    message_name = "MULTI-CHUNK"
+    fieldsCnt = 0
+  else
+    --byte #3 = bN with N : number of fields
+    fieldsCnt = readBuffer(buffer, offset+2, 1):uint() - 0xb0 
+    chunktree:add(fields_count, fieldsCnt)  
 
-  --byte #3 = bN with N : number of fields
-  local fieldsCnt = readBuffer(buffer, offset+2, 1):uint() - 0xb0 
-  chunktree:add(fields_count, fieldsCnt)  
 
-
-  --byte #4 = tag (identifies the type of message)
-	local tag = readBuffer(buffer,offset+3,1):int()
-	local message_name = get_message_name(tag)
+    --byte #4 = tag (identifies the type of message)
+    local tag = readBuffer(buffer,offset+3,1):int()
+    message_name = get_message_name(tag)
+  end
   chunktree:add(message_tag, message_name) 
   table.insert(info, message_name) -- TODO : add extra info
 
@@ -303,7 +318,11 @@ function read_next_chunk(subtree, pinfo, buffer, offset)
     --  chunktree.message_tag.text
     --end
   end
-
+  termination = readBuffer(buffer,offset + 2 + size, 2):int()
+  if termination ~= 0x0000 then
+    -- subtree:add("read_next_chunk", "multi-chunk message: next chunk has end of message above")
+    return offset + size + 2
+  end
   return offset + size + 4  -- 2-byte header + 2 zero-bytes termination
 end
 
@@ -346,7 +365,7 @@ end
 function analyzePayload(buffer, subtree, pinfo, ws_offset) 
   local case
   local length=buffer:len()
-  if (length == (2+ws_offset) and readBuffer(buffer,0+ws_offset,2) == 0x0000) then
+  if (length == (2+ws_offset) and readBuffer(buffer,0+ws_offset,2):uint() == 0x0000) then
       case="NOOP"
       subtree:add(message_tag, case) 
       pinfo.cols.info = "keep-alive"
@@ -387,8 +406,9 @@ function analyzePayload(buffer, subtree, pinfo, ws_offset)
               info ={} -- stores info to display about each message
               local next_offset = 0 + ws_offset
               while next_offset < length do
+                  --  subtree:add("while loop", next_offset .." vs ".. length)
                    local end_offset = read_next_chunk(subtree, pinfo, buffer, next_offset)
-                   if end_offset == -1 then return "ERROR" end
+                   if end_offset == 0 then return "SKIP" end
                    next_offset = end_offset 
               end
               -- display info summary
@@ -431,19 +451,17 @@ function bolt_protocol.dissector(buffer, pinfo, tree)
   is_websocket=false
   ws_mask=null
   unmasked_bytes= ByteArray.new()
-  local subtree = tree:add(bolt_protocol, buffer(), "Bolt Protocol Data")
+  local subtree = tree:add(bolt_protocol, buffer(), "Bolt Protocol Data".. " (" .. buffer:len() .. " bytes)")
+  pinfo.cols.protocol = bolt_protocol.name
+  if is_websocket then
+    pinfo.cols.protocol = bolt_protocol.name .. "/ws"
+  end
 
   if (buffer:len() ~= buffer:reported_len()) then -- packet capture may truncate TCP frames ; flag those cases
     subtree:add("TCP Frame cut-off", "has " .. buffer:len() .." out of ".. buffer:reported_len() )    
   end
   local case=analyzePayload(buffer, subtree, pinfo, 0) 
-  if case == "ERROR" then return end
-  
-  if is_websocket then
-    pinfo.cols.protocol = bolt_protocol.name .. "/ws"
-  else
-    pinfo.cols.protocol = bolt_protocol.name 
-  end
+  if case == "ERROR" or case == "SKIP" then return end
 
 end
 
