@@ -306,7 +306,12 @@ function read_next_chunk(subtree, pinfo, buffer, offset)
     temp=''
     local field_offset = offset+4
     while i < fieldsCnt do
-      local field_end_offset = read_next_value(chunktree, buffer, field_offset)
+      local field_end_offset = field_offset --read_next_value(chunktree, buffer, field_offset)
+      status, field_end_offset = pcall(read_next_value, chunktree, buffer, field_offset)
+      if not status then
+        subtree:add("read_next_chunk", "Failure when reading value")
+        break
+      end
       field_offset = field_end_offset
       if (i==0) and (mode == "QUERY" and message_name=="RUN") then
           table.insert(info, "["..temp.."]")
@@ -345,6 +350,12 @@ function bxor (a,b)
 end
 
 function readBuffer(buffer, start, size)
+  if start >= buffer:len() then
+    return ByteArray.new()
+  end
+  if start + size > buffer:len() then
+    size = buffer:len() - start
+  end
   if ws_mask then
     --local unmasked_bytes= ByteArray.new()
     unmasked_bytes:set_size(size)
